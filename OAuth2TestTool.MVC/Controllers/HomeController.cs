@@ -92,7 +92,7 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// <param name="code"></param>
 		/// <returns></returns>
 		[HttpPost]
-		public IActionResult ExchangeCodeForTokens(AuthorizationViewModel model)
+		public IActionResult GetTokens(AuthorizationViewModel model)
 		{
 			// Auth code is now invalid.
 			model.AuthorizationCode = "(used) " + model.AuthorizationCode;
@@ -141,7 +141,7 @@ namespace OAuth2TestTool.MVC.Controllers
 		}
 
 		[HttpPost]
-		public JsonResult Refresh(AuthorizationViewModel model)
+		public JsonResult RefreshTokens(AuthorizationViewModel model)
 		{
 			return Json(new { });
 		}

@@ -53,7 +53,7 @@
 	<div class="panel-heading">Access (and Refresh) Token via Authorization Code</div>
 	<div class="panel-body">
 
-		<form asp-controller="Home" asp-action="ExchangeCodeForTokens"
+		<form asp-controller="Home" asp-action="GetTokens"
 			  data-ajax="true"
 			  data-ajax-method="POST"
 			  data-ajax-mode="replace"
@@ -137,11 +137,11 @@
 		$(document).ready(function () {
 
 			$('#getTokenButton').click(function () {
-				var url = '@Url.Action("ExchangeCodeForTokens", "Home")';
+				var url = '@Url.Action("GetTokens", "Home")';
 				//var keyWord = $('#Keyword').val();
 				//$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
 
-				$.getJSON('@Url.Action("ExchangeCodeForTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
+				$.getJSON('@Url.Action("GetTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
 					$('#accessToken').text(tokenResponse.access_token);
 					$('#refreshToken').text(tokenResponse.refresh_token);
 					$('#tokenResponse').text(JSON.stringify(tokenResponse));
