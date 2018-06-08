@@ -39,37 +39,71 @@ namespace OAuth2TestTool.MVC.Controllers
 		private const string ClientID = "6c0638b1-65bf-4018-9a29-6c65d05acffc";
 		private const string ClientSecret = "oRqAuGefHeULcd65bzZKKw2zLwSiEfOMny2CmnY2UAo";
 
-		public IActionResult Index(string code)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="code">Authorization code will be provided by the IDP when redirecting back to this page following the authorization request.</param>
+		/// <returns></returns>
+		public IActionResult Index(string code, string state)
 		{
+			// If this request is coming back from the auth provder on the authorization request (i.e. due to the redirect_uri being THIS page, 
+			// the auth code will be a query parameter in the request url. Let's send it to the view.
 			ViewData["code"] = code;
 
-			return View();
+			if (state != null)
+			{
+				// Request came from OAuth provider.
+				if (state != Request.Cookies["State"])
+				{
+					throw new Exception("State sent to OAuth provider did not match response state.");
+				}
+			}
+			
+			// Prepopulate form data from cookie. Cookies have NOTHING to do with the authentication process, they are just used here to maintain the state
+			// of the form when bouncing back and forth from the auth provider.
+			var model = new AuthorizationViewModel
+			{
+				AuthorizationEndpoint = Request.Cookies["AuthorizationEndpoint"],
+				RedirectURI = "https://" + Request.Host.Value + "/",
+				ClientId = Request.Cookies["ClientId"],
+				Scope = Request.Cookies["Scope"],
+				State = Request.Cookies["State"] ?? Guid.NewGuid().ToString("N")
+			};
+
+			// State, generate a random state variable. The idea is that you pass the state along with the request, then the auth server returns
+			// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it. 
+			//string state = Guid.NewGuid().ToString("N");
+
+			return View(model);
 		}
 
 		/// <summary>
 		/// Refirect to auth server to authenticate user and return with auth code.
 		/// </summary>
 		/// <returns></returns>
-		//[HttpGet]
 		[HttpPost]
 		public IActionResult GetAuthorizationCode(AuthorizationViewModel model)
 		{
+			// Dump view model to cookie.
+			Response.Cookies.Append("AuthorizationEndpoint", model.AuthorizationEndpoint);
+			Response.Cookies.Append("ClientId", model.ClientId);
+			Response.Cookies.Append("Scope", model.Scope);
+			Response.Cookies.Append("State", model.State);
+
+			// RELEVANT CODE
+
 			// First redirect to the authorization endpoint. A user must be logged into Brightspace for this to work, or will be redirected to
 			// Brightspace login for one time sign in. This should be done by a service level Brightspace account.
-
-			// Generate a random state variable. The idea is that you pass the state along with the request, then the auth server returns
-			// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it. 
-			string state = Guid.NewGuid().ToString("N");
 
 			// Build authorization code request.
 			string authCodeRequest = AuthBaseUri
 				+ "/"
 				+ AuthorizationEndpoint
 				+ "?response_type=code"
-				+ "&redirect_uri=" + RedirectUri
-				+ "&client_id=" + ClientID
-				+ "&scope=" + Scope
-				+ "&state=" + state;
+				+ "&redirect_uri=" + model.RedirectURI.Trim()
+				+ "&client_id=" + model.ClientId.Trim()
+				+ "&scope=" + model.Scope.Trim()
+				+ "&state=" + model.State.Trim();
 
 			return Redirect(authCodeRequest);
 		}

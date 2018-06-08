@@ -2,8 +2,9 @@
 	ViewData["Title"] = "Home Page";
 }
 @*@model OAuth2TestTool.MVC.Models.OAuthViewModel*@
+@model OAuth2TestTool.MVC.Models.AuthorizationViewModel
 
-<h1>Brightspace OAuth2.0 Authentication Tool</h1>
+<h1>OAuth2 Authentication Testing Tool</h1>
 
 @*<div class="panel panel-danger">
 		<div class="panel-body">
@@ -16,39 +17,48 @@
 	<div class="panel-heading">Authorization Code</div>
 	<div class="panel-body">
 
-		<form asp-controller="Home" asp-action="GetAuthorizationCode" 
+		<form asp-controller="Home" asp-action="GetAuthorizationCode"
 			  data-ajax="true"
 			  data-ajax-method="POST"
-			  data-ajax-mode="replace"
-			  >
+			  data-ajax-mode="replace">
 			<fieldset>
 				<div class="form-group">
 					@Html.Label("Authorization Endpoint")
-					@Html.TextBox("AuthorizationEndpoint", "", htmlAttributes:new { @class = "form-control", id = "AuthorizationEndpoint" })
+					@Html.TextBoxFor(m => m.AuthorizationEndpoint, "", htmlAttributes: new { @class = "form-control", id = "AuthorizationEndpoint", placeholder = "e.g. https://auth.brightspace.com/oauth2/auth" })
 				</div>
 				<div class="form-group">
 					@Html.Label("Redirect URI")
-					@Html.TextBox("RedirectUri", "", htmlAttributes: new { @class = "form-control", id = "RedirectUri" })
+					@Html.TextBoxFor(m => m.RedirectURI, "", htmlAttributes: new { @class = "form-control", id = "RedirectURI", @readonly = "readonly" })
 				</div>
 				<div class="form-group">
 					@Html.Label("Client ID")
-					@Html.TextBox("ClientId", "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+					@Html.TextBoxFor(m => m.ClientId, "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
 				</div>
 				<div class="form-group">
 					@Html.Label("Scope")
-					@Html.TextBox("Scope", "", htmlAttributes: new { @class = "form-control", id = "Scope" })
+					@Html.TextBoxFor(m => m.Scope, "", htmlAttributes: new { @class = "form-control", id = "Scope" })
 				</div>
 				<div class="form-group">
 					@Html.Label("State")
-					@Html.TextBox("State", "", htmlAttributes: new { @class = "form-control", id = "State" })
+					@Html.TextBoxFor(m => m.State, "", htmlAttributes: new { @class = "form-control", id = "State" })
 				</div>
-				<input type="submit" class="btn btn-lg btn-primary" value="Get Authorization Code"  />
-			</fieldset>		
+				<input type="submit" class="btn btn-lg btn-primary" value="Get Authorization Code" />
+			</fieldset>
 		</form>
+		<br />
 
-		@Html.ActionLink("Get Authorization Code", "GetAuthorizationCode", "Home", new object { }, new { @class = "btn btn-lg btn-primary" })
-		<p>If you are not already signed into BrightSpace, you will be prompted to do so.</p>
+				<p>
+					If a user is not aready signed into the provider in this browser, you will be prompted for credentials, then the provider will redirect back to this page (i.e. the redirect uri) along with the
+					<strong>authorization code</strong> in the request URL.
+				</p>
+
+
+		@*@Html.ActionLink("Get Authorization Code", "GetAuthorizationCode", "Home", new object { }, new { @class = "btn btn-lg btn-primary" })*@
+
+		<br />
+		<h4>Authorization Code</h4>
 		<pre>@ViewData["code"]</pre>
+
 	</div>
 </div>
 
@@ -123,9 +133,5 @@
 <style>
 	pre {
 		white-space: normal;
-	}
-
-	.btn {
-		margin-bottom: 20px;
 	}
 </style>
