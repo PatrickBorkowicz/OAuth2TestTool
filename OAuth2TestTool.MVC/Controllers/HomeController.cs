@@ -12,33 +12,8 @@ using Newtonsoft.Json;
 
 namespace OAuth2TestTool.MVC.Controllers
 {
-	public class TokenResponse
-	{
-		[JsonProperty("access_token")]
-		public string AccessToken { get; set; }
-
-		[JsonProperty("refresh_token")]
-		public string RefreshToken { get; set; }
-
-		[JsonProperty("token_type")]
-		public string TokenType { get; set; }
-
-		[JsonProperty("expires_in")]
-		public int? ExpiresIn { get; set; }
-	}
-
 	public class HomeController : Controller
 	{
-		private const string AuthBaseUri = "https://auth.brightspace.com";
-		private const string AuthorizationEndpoint = "oauth2/auth"; //https://auth.brightspace.com/oauth2/auth
-		private const string TokenEndpoint = "core/connect/token";  //https://auth.brightspace.com/core/connect/token
-		private const string Scope = "core:*:*";
-
-		// App Specific
-		private const string RedirectUri = "https://localhost:44311/";
-		private const string ClientID = "6c0638b1-65bf-4018-9a29-6c65d05acffc";
-		private const string ClientSecret = "oRqAuGefHeULcd65bzZKKw2zLwSiEfOMny2CmnY2UAo";
-
 		/// <summary>
 		/// 
 		/// </summary>
@@ -64,8 +39,11 @@ namespace OAuth2TestTool.MVC.Controllers
 			var model = new AuthorizationViewModel
 			{
 				AuthorizationEndpoint = Request.Cookies["AuthorizationEndpoint"],
+				AuthorizationCode = Request.Cookies["AuthorizationCode"] ?? code,
+				TokenEndpoint = Request.Cookies["TokenEndpoint"],
 				RedirectURI = "https://" + Request.Host.Value + "/",
 				ClientId = Request.Cookies["ClientId"],
+				ClientSecret = Request.Cookies["ClientSecret"],
 				Scope = Request.Cookies["Scope"],
 				State = Request.Cookies["State"] ?? Guid.NewGuid().ToString("N")
 			};
@@ -86,9 +64,11 @@ namespace OAuth2TestTool.MVC.Controllers
 		{
 			// Dump view model to cookie.
 			Response.Cookies.Append("AuthorizationEndpoint", model.AuthorizationEndpoint);
+			Response.Cookies.Append("RedirectURI", model.RedirectURI);
 			Response.Cookies.Append("ClientId", model.ClientId);
 			Response.Cookies.Append("Scope", model.Scope);
 			Response.Cookies.Append("State", model.State);
+			Response.Cookies.Delete("AuthorizationCode");
 
 			// RELEVANT CODE
 
@@ -96,16 +76,14 @@ namespace OAuth2TestTool.MVC.Controllers
 			// Brightspace login for one time sign in. This should be done by a service level Brightspace account.
 
 			// Build authorization code request.
-			string authCodeRequest = AuthBaseUri
-				+ "/"
-				+ AuthorizationEndpoint
+			string authCodeRequestUri = model.AuthorizationEndpoint
 				+ "?response_type=code"
 				+ "&redirect_uri=" + model.RedirectURI.Trim()
 				+ "&client_id=" + model.ClientId.Trim()
 				+ "&scope=" + model.Scope.Trim()
 				+ "&state=" + model.State.Trim();
 
-			return Redirect(authCodeRequest);
+			return Redirect(authCodeRequestUri);
 		}
 
 		/// <summary>
@@ -113,35 +91,59 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// </summary>
 		/// <param name="code"></param>
 		/// <returns></returns>
-		[HttpGet]
-		public JsonResult GetTokens(string code)
+		[HttpPost]
+		public IActionResult ExchangeCodeForTokens(AuthorizationViewModel model)
 		{
-			var client = new RestClient(AuthBaseUri);
+			// Auth code is now invalid.
+			model.AuthorizationCode = "(used) " + model.AuthorizationCode;
+
+			// Dump view model to cookie.
+			Response.Cookies.Append("TokenEndpoint", model.TokenEndpoint);
+			Response.Cookies.Append("RedirectURI", model.RedirectURI);
+			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
+			Response.Cookies.Append("ClientId", model.ClientId);
+			Response.Cookies.Append("ClientSecret", model.ClientSecret);
+
+			// RELEVANT CODE
+
+			var client = new RestClient(model.TokenEndpoint.Trim());
 
 			// Prepare POST request to the token endpoint.
-			var tokenRequest = new RestRequest(TokenEndpoint, Method.POST);
+			var tokenRequest = new RestRequest(model.TokenEndpoint.Trim(), Method.POST);
 
 			// Send as form.
 			tokenRequest.AddHeader("content-type", "application/x-www-form-urlencoded");
 
 			// Add credentials to the header.
-			client.Authenticator = new HttpBasicAuthenticator(ClientID, ClientSecret);
+			// This will have the effect of creating this header:
+			// Authorization: Basic hsjksjkhfhfsjk324yfdsuiyruiwryew=
+			// the client id and secret will be appear as myclientid:myclientsecret and endcoded in base64 (note the colon seperating the two before encoding).
+			client.Authenticator = new HttpBasicAuthenticator(model.ClientId, model.ClientSecret);
 
-			// Or alternatively:
-			//tokenRequest.AddParameter("client_id", ClientID);
-			//tokenRequest.AddParameter("client_secret", ClientSecret);	
-			
+			// Supposedly you can place the client id and secret in the request url as query parameters instead of the Authorization header, but this does not always work.
+			//tokenRequest.AddParameter("client_id", model.ClientId);
+			//tokenRequest.AddParameter("client_secret", model.ClientSecret);	
+
 			// Since this is a POST request, RestSharp will add these to the payload (request body).	
 			tokenRequest.AddParameter("grant_type", "authorization_code");
-			tokenRequest.AddParameter("redirect_uri", RedirectUri);
-			tokenRequest.AddParameter("code", code);
+			tokenRequest.AddParameter("redirect_uri", model.RedirectURI);
+			tokenRequest.AddParameter("code", model.AuthorizationCode.Trim());
 
 			IRestResponse response = client.Execute(tokenRequest);
 
 			// Deserialize JSON response.
-			var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(response.Content);
+			var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
-			return Json(tokenResponse);
+			model.AccessToken = tokenResponse.AccessToken;
+			model.RefreshToken = tokenResponse.RefreshToken;
+
+			return View("Tokens");
+		}
+
+		[HttpPost]
+		public JsonResult Refresh(AuthorizationViewModel model)
+		{
+			return Json(new { });
 		}
 
 		public IActionResult Error()

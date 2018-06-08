@@ -1,26 +1,17 @@
 ﻿@{
 	ViewData["Title"] = "Home Page";
 }
-@*@model OAuth2TestTool.MVC.Models.OAuthViewModel*@
+
 @model OAuth2TestTool.MVC.Models.AuthorizationViewModel
 
 <h1>OAuth2 Authentication Testing Tool</h1>
-
-@*<div class="panel panel-danger">
-		<div class="panel-body">
-
-		</div>
-	</div>*@
 
 <div class="panel panel-primary">
 
 	<div class="panel-heading">Authorization Code</div>
 	<div class="panel-body">
 
-		<form asp-controller="Home" asp-action="GetAuthorizationCode"
-			  data-ajax="true"
-			  data-ajax-method="POST"
-			  data-ajax-mode="replace">
+		<form asp-controller="Home" asp-action="GetAuthorizationCode">
 			<fieldset>
 				<div class="form-group">
 					@Html.Label("Authorization Endpoint")
@@ -51,10 +42,6 @@
 					If a user is not aready signed into the provider in this browser, you will be prompted for credentials, then the provider will redirect back to this page (i.e. the redirect uri) along with the
 					<strong>authorization code</strong> in the request URL.
 				</p>
-
-
-		@*@Html.ActionLink("Get Authorization Code", "GetAuthorizationCode", "Home", new object { }, new { @class = "btn btn-lg btn-primary" })*@
-
 		<br />
 		<h4>Authorization Code</h4>
 		<pre>@ViewData["code"]</pre>
@@ -65,14 +52,52 @@
 <div class="panel panel-primary">
 	<div class="panel-heading">Access (and Refresh) Token via Authorization Code</div>
 	<div class="panel-body">
-		<button id="getTokenButton" class="btn btn-lg btn-primary">Trade In Authorization Code</button>
+
+		<form asp-controller="Home" asp-action="ExchangeCodeForTokens"
+			  data-ajax="true"
+			  data-ajax-method="POST"
+			  data-ajax-mode="replace"
+			  data-ajax-update="#content"
+			  data-ajax-success="Success"
+			  data-ajax-failure="Failure"
+			  >
+			<fieldset>
+				<div class="form-group">
+					@Html.Label("Token Endpoint")
+					@Html.TextBoxFor(m => m.TokenEndpoint, "", htmlAttributes: new { @class = "form-control", id = "TokenEndpoint", placeholder = "e.g. https://auth.brightspace.com/core/connect/token" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Redirect URI")
+					@Html.TextBoxFor(m => m.RedirectURI, "", htmlAttributes: new { @class = "form-control", id = "RedirectURI", @readonly = "readonly" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Client ID")
+					@Html.TextBoxFor(m => m.ClientId, "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Client Secret")
+					@Html.TextBoxFor(m => m.ClientSecret, "", htmlAttributes: new { @class = "form-control", id = "ClientSecret" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Authorization Code")
+					@Html.TextBoxFor(m => m.AuthorizationCode, "", htmlAttributes: new { @class = "form-control", id = "State" })
+				</div>
+				<input type="submit" class="btn btn-lg btn-primary" value="Trade In Authorization Code" />
+			</fieldset>
+		</form>
+
+		<div id="content">
+
+		</div>
+
+		@*<button id="getTokenButton" class="btn btn-lg btn-primary">Trade In Authorization Code</button>*@
 		<div>
 			<strong>Access Token</strong>
-			<pre id="accessToken"></pre>
+			<pre id="accessToken">@Model.AccessToken</pre>
 		</div>
 		<div>
 			<strong>Refresh Token</strong>
-			<pre id="refreshToken"></pre>
+			<pre id="refreshToken">@Model.RefreshToken</pre>
 		</div>
 		<div>
 			<strong>Raw Response</strong>
@@ -112,11 +137,11 @@
 		$(document).ready(function () {
 
 			$('#getTokenButton').click(function () {
-				var url = '@Url.Action("GetTokens", "Home")';
+				var url = '@Url.Action("ExchangeCodeForTokens", "Home")';
 				//var keyWord = $('#Keyword').val();
 				//$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
 
-				$.getJSON('@Url.Action("GetTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
+				$.getJSON('@Url.Action("ExchangeCodeForTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
 					$('#accessToken').text(tokenResponse.access_token);
 					$('#refreshToken').text(tokenResponse.refresh_token);
 					$('#tokenResponse').text(JSON.stringify(tokenResponse));
@@ -129,6 +154,15 @@
 		});
 	</script>
 }
+
+<div class="panel panel-danger">
+	<div class="panel-heading">
+		Disclaimer
+	</div>
+	<div class="panel-body">
+		AS IS . This does not automagically generate reports!
+	</div>
+</div>
 
 <style>
 	pre {
