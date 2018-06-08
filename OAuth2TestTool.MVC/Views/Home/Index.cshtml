@@ -1,0 +1,131 @@
+﻿@{
+	ViewData["Title"] = "Home Page";
+}
+@*@model OAuth2TestTool.MVC.Models.OAuthViewModel*@
+
+<h1>Brightspace OAuth2.0 Authentication Tool</h1>
+
+@*<div class="panel panel-danger">
+		<div class="panel-body">
+
+		</div>
+	</div>*@
+
+<div class="panel panel-primary">
+
+	<div class="panel-heading">Authorization Code</div>
+	<div class="panel-body">
+
+		<form asp-controller="Home" asp-action="GetAuthorizationCode" 
+			  data-ajax="true"
+			  data-ajax-method="POST"
+			  data-ajax-mode="replace"
+			  >
+			<fieldset>
+				<div class="form-group">
+					@Html.Label("Authorization Endpoint")
+					@Html.TextBox("AuthorizationEndpoint", "", htmlAttributes:new { @class = "form-control", id = "AuthorizationEndpoint" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Redirect URI")
+					@Html.TextBox("RedirectUri", "", htmlAttributes: new { @class = "form-control", id = "RedirectUri" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Client ID")
+					@Html.TextBox("ClientId", "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+				</div>
+				<div class="form-group">
+					@Html.Label("Scope")
+					@Html.TextBox("Scope", "", htmlAttributes: new { @class = "form-control", id = "Scope" })
+				</div>
+				<div class="form-group">
+					@Html.Label("State")
+					@Html.TextBox("State", "", htmlAttributes: new { @class = "form-control", id = "State" })
+				</div>
+				<input type="submit" class="btn btn-lg btn-primary" value="Get Authorization Code"  />
+			</fieldset>		
+		</form>
+
+		@Html.ActionLink("Get Authorization Code", "GetAuthorizationCode", "Home", new object { }, new { @class = "btn btn-lg btn-primary" })
+		<p>If you are not already signed into BrightSpace, you will be prompted to do so.</p>
+		<pre>@ViewData["code"]</pre>
+	</div>
+</div>
+
+<div class="panel panel-primary">
+	<div class="panel-heading">Access (and Refresh) Token via Authorization Code</div>
+	<div class="panel-body">
+		<button id="getTokenButton" class="btn btn-lg btn-primary">Trade In Authorization Code</button>
+		<div>
+			<strong>Access Token</strong>
+			<pre id="accessToken"></pre>
+		</div>
+		<div>
+			<strong>Refresh Token</strong>
+			<pre id="refreshToken"></pre>
+		</div>
+		<div>
+			<strong>Raw Response</strong>
+			<pre id="tokenResponse"></pre>
+		</div>
+	</div>
+</div>
+
+<div class="panel panel-primary">
+	<div class="panel-heading">Access (and Refresh) Token via Refresh Token</div>
+	<div class="panel-body">
+		<button id="tradeRefreshTokenButton" class="btn btn-lg btn-primary">Trade In Refresh Token Code</button>
+		<div>
+			<strong>Access Token</strong>
+			<pre id="accessToken2"></pre>
+		</div>
+		<div>
+			<strong>Refresh Token</strong>
+			<pre id="refreshToken2"></pre>
+		</div>
+		<div>
+			<strong>Raw Response</strong>
+			<pre id="tokenResponse2"></pre>
+		</div>
+	</div>
+</div>
+
+<div class="panel panel-primary">
+	<div class="panel-heading">Call the <strong>whoami</strong> API Endpoint</div>
+	<div class="panel-body">
+		<button class="btn btn-lg btn-primary">Send GET Request</button>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		$(document).ready(function () {
+
+			$('#getTokenButton').click(function () {
+				var url = '@Url.Action("GetTokens", "Home")';
+				//var keyWord = $('#Keyword').val();
+				//$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
+
+				$.getJSON('@Url.Action("GetTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
+					$('#accessToken').text(tokenResponse.access_token);
+					$('#refreshToken').text(tokenResponse.refresh_token);
+					$('#tokenResponse').text(JSON.stringify(tokenResponse));
+				});
+			});
+
+			$('#tradeRefreshTokenButton').click(function () {
+				$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
+			});
+		});
+	</script>
+}
+
+<style>
+	pre {
+		white-space: normal;
+	}
+
+	.btn {
+		margin-bottom: 20px;
+	}
+</style>
