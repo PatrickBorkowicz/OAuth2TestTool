@@ -94,9 +94,6 @@ namespace OAuth2TestTool.MVC.Controllers
 		[HttpPost]
 		public IActionResult GetTokens(AuthorizationViewModel model)
 		{
-			// Auth code is now invalid.
-			model.AuthorizationCode = "(used) " + model.AuthorizationCode;
-
 			// Dump view model to cookie.
 			Response.Cookies.Append("TokenEndpoint", model.TokenEndpoint);
 			Response.Cookies.Append("RedirectURI", model.RedirectURI);
@@ -134,10 +131,12 @@ namespace OAuth2TestTool.MVC.Controllers
 			// Deserialize JSON response.
 			var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
+			model.RawResponse = response.Content;
 			model.AccessToken = tokenResponse.AccessToken;
 			model.RefreshToken = tokenResponse.RefreshToken;
+			model.AuthorizationCode = "(used) " + model.AuthorizationCode;  // Auth code is now invalid.
 
-			return View("Tokens");
+			return PartialView("_Tokens", model);
 		}
 
 		[HttpPost]

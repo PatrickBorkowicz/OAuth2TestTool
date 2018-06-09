@@ -1,0 +1,18 @@
+﻿@{
+	Layout = null;
+}
+@model OAuth2TestTool.MVC.Models.AuthorizationViewModel
+
+<br />
+<div>
+	<strong>Access Token</strong>
+	<pre id="accessToken">@Model.AccessToken</pre>
+</div>
+<div>
+	<strong>Refresh Token</strong>
+	<pre id="refreshToken">@Model.RefreshToken</pre>
+</div>
+<div>
+	<strong>Raw Response</strong>
+	<pre id="tokenResponse">@Model.RawResponse</pre>
+</div>

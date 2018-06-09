@@ -53,11 +53,12 @@
 	<div class="panel-heading">Access (and Refresh) Token via Authorization Code</div>
 	<div class="panel-body">
 
-		<form asp-controller="Home" asp-action="GetTokens"
+		<form asp-controller="Home" asp-action="GetTokens" method="POST"
 			  data-ajax="true"
 			  data-ajax-method="POST"
 			  data-ajax-mode="replace"
 			  data-ajax-update="#content"
+			  data-ajax-loading  ="#divloading"
 			  data-ajax-success="Success"
 			  data-ajax-failure="Failure"
 			  >
@@ -90,19 +91,6 @@
 
 		</div>
 
-		@*<button id="getTokenButton" class="btn btn-lg btn-primary">Trade In Authorization Code</button>*@
-		<div>
-			<strong>Access Token</strong>
-			<pre id="accessToken">@Model.AccessToken</pre>
-		</div>
-		<div>
-			<strong>Refresh Token</strong>
-			<pre id="refreshToken">@Model.RefreshToken</pre>
-		</div>
-		<div>
-			<strong>Raw Response</strong>
-			<pre id="tokenResponse"></pre>
-		</div>
 	</div>
 </div>
 
@@ -152,6 +140,17 @@
 				$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
 			});
 		});
+
+		function Success() {
+
+			$('#Name').val("");
+			$('#Age').val("")
+
+		}
+		function Failure() {
+
+			alert("Form Failed");
+		}
 	</script>
 }
 
