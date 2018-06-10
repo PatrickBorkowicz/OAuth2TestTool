@@ -140,8 +140,10 @@ namespace OAuth2TestTool.MVC.Controllers
 		}
 
 		[HttpPost]
-		public JsonResult RefreshTokens(AuthorizationViewModel model)
+		public IActionResult RefreshTokens(AuthorizationViewModel model)
 		{
+
+
 			return Json(new { });
 		}
 

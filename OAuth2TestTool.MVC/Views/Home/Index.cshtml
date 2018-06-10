@@ -57,7 +57,7 @@
 			  data-ajax="true"
 			  data-ajax-method="POST"
 			  data-ajax-mode="replace"
-			  data-ajax-update="#content"
+			  data-ajax-update="#get-tokens-response"
 			  data-ajax-loading  ="#divloading"
 			  data-ajax-success="Success"
 			  data-ajax-failure="Failure"
@@ -87,7 +87,7 @@
 			</fieldset>
 		</form>
 
-		<div id="content">
+		<div id="get-tokens-response">
 
 		</div>
 
@@ -141,15 +141,15 @@
 			});
 		});
 
-		function Success() {
-
-			$('#Name').val("");
-			$('#Age').val("")
+		function Success(data) {
+			console.log(data);
+			//$('#Name').val("");
+			//$('#Age').val("")
 
 		}
 		function Failure() {
 
-			alert("Form Failed");
+			//alert("Form Failed");
 		}
 	</script>
 }
