@@ -1,5 +1,5 @@
 ﻿@{
-	ViewData["Title"] = "Home Page";
+	ViewData["Title"] = "OAuth2TestTool";
 }
 
 @model OAuth2TestTool.MVC.Models.AuthorizationViewModel
@@ -8,8 +8,9 @@
 <p></p>
 <div class="row">
 	<div class="col-md-12">
-		<button class="btn btn-default">Clear Codes / Tokens</button>
-		<button class="btn btn-danger">Clear Cookies</button>
+		@*<button class="btn btn-default">Clear Codes / Tokens</button>*@
+		@*<button id="clear-cookies" class="btn btn-danger">Clear Cookies</button>*@
+		@Html.ActionLink("Clear Cookies", "ClearCookies", "Home", null, new { @class = "btn btn-danger" })
 	</div>
 </div>
 <hr />
@@ -156,7 +157,7 @@
 	</div>
 </div>
 
-<div class="panel panel-primary">
+@*<div class="panel panel-primary">
 	<div class="panel-heading">
 		<h4 class="panel-title">
 			<a data-toggle="collapse" href="#call-sample-endpoint" aria-expanded="true">Call the <strong>Sample</strong> API Endpoint</a>
@@ -167,7 +168,7 @@
 			<button class="btn btn-lg btn-primary">Send GET Request</button>
 		</div>
 	</div>
-</div>
+</div>*@
 
 @section Scripts {
 	<script>
@@ -190,6 +191,10 @@
 			});
 		});
 
+		$('#clear-cookies').click(function () { 
+			$.get(@Url.Action("ClearCookies", "Home"));
+		});
+
 		function Success(data) {
 			//$('#Name').val("");
 			//$('#Age').val("")
@@ -201,15 +206,6 @@
 		}
 	</script>
 }
-
-<div class="panel panel-danger">
-	<div class="panel-heading">
-		Disclaimer
-	</div>
-	<div class="panel-body">
-		AS IS
-	</div>
-</div>
 
 <style>
 	pre {

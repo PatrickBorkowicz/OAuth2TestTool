@@ -154,7 +154,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			var client = new RestClient(model.RefreshTokenEndpoint.Trim());
 
 			// Prepare POST request to the token endpoint.
-			var tokenRequest = new RestRequest(model.TokenEndpoint.Trim(), Method.POST);
+			var tokenRequest = new RestRequest(model.RefreshTokenEndpoint.Trim(), Method.POST);
 
 			// Send as form.
 			tokenRequest.AddHeader("content-type", "application/x-www-form-urlencoded");
@@ -176,6 +176,14 @@ namespace OAuth2TestTool.MVC.Controllers
 			return PartialView("_Tokens", model);
 
 			//return Json(new { });
+		}
+
+		public IActionResult ClearCookies()
+		{
+			foreach (var cookie in Request.Cookies.Keys)
+				Response.Cookies.Delete(cookie);
+
+			return View("Index");
 		}
 
 		public IActionResult Error()
