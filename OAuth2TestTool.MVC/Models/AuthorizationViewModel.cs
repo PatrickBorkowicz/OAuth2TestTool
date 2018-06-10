@@ -9,6 +9,7 @@ namespace OAuth2TestTool.MVC.Models
     {
 		public string AuthorizationEndpoint { get; set; }
 		public string TokenEndpoint { get; set; }
+		public string RefreshTokenEndpoint { get; set; }
 		public string RedirectURI { get; set; }
 		public string ClientId { get; set; }
 		public string ClientSecret { get; set; }

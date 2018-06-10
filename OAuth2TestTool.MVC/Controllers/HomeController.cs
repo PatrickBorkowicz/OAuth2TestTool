@@ -39,6 +39,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			var model = new AuthorizationViewModel
 			{
 				AuthorizationEndpoint = Request.Cookies["AuthorizationEndpoint"],
+				RefreshTokenEndpoint = Request.Cookies["RefreshTokenEndpoint"],
 				AuthorizationCode = Request.Cookies["AuthorizationCode"] ?? code,
 				TokenEndpoint = Request.Cookies["TokenEndpoint"],
 				RedirectURI = "https://" + Request.Host.Value + "/",
@@ -142,9 +143,39 @@ namespace OAuth2TestTool.MVC.Controllers
 		[HttpPost]
 		public IActionResult RefreshTokens(AuthorizationViewModel model)
 		{
+			// Dump view model to cookie.
+			Response.Cookies.Append("RefreshTokenEndpoint", model.RefreshTokenEndpoint);
+			Response.Cookies.Append("ClientId", model.ClientId);
+			Response.Cookies.Append("ClientSecret", model.ClientSecret);
+			Response.Cookies.Append("Scope", model.Scope);
 
+			// RELEVANT CODE
 
-			return Json(new { });
+			var client = new RestClient(model.RefreshTokenEndpoint.Trim());
+
+			// Prepare POST request to the token endpoint.
+			var tokenRequest = new RestRequest(model.TokenEndpoint.Trim(), Method.POST);
+
+			// Send as form.
+			tokenRequest.AddHeader("content-type", "application/x-www-form-urlencoded");
+			client.Authenticator = new HttpBasicAuthenticator(model.ClientId, model.ClientSecret);
+
+			// Since this is a POST request, RestSharp will add these to the payload (request body).	
+			tokenRequest.AddParameter("grant_type", "refresh_token"); // grant type is now refresh token!
+			tokenRequest.AddParameter("refresh_token", model.RefreshToken.Trim());
+
+			IRestResponse response = client.Execute(tokenRequest);
+
+			// Deserialize JSON response.
+			var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
+
+			model.RawResponse = response.Content;
+			model.AccessToken = tokenResponse.AccessToken;
+			model.RefreshToken = tokenResponse.RefreshToken;
+
+			return PartialView("_Tokens", model);
+
+			//return Json(new { });
 		}
 
 		public IActionResult Error()
