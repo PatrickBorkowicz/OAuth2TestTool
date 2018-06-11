@@ -40,24 +40,8 @@ namespace OAuth2TestTool.MVC
                 app.UseExceptionHandler("/Home/Error");
             }
 
-			// Boilerplate
-			//app.UseStaticFiles();
-
-			// For wwwroot directory
 			app.UseStaticFiles();
-
-			// Add support for node_modules but only during development **temporary**
-			if (env.IsDevelopment())
-			{
-				app.UseStaticFiles(new StaticFileOptions()
-				{
-					FileProvider = new PhysicalFileProvider(
-					  Path.Combine(Directory.GetCurrentDirectory(), @"node_modules")),
-					RequestPath = new PathString("/vendor")
-				});
-			}
-
-
+			
 			app.UseMvc(routes =>
             {
                 routes.MapRoute(

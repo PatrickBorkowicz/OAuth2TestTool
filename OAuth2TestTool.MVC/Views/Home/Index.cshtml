@@ -9,9 +9,8 @@
 <p>This site uses cookies. No values are persisted on the server (except potentially in web logs).</p>
 <div class="row">
 	<div class="col-md-12">
-		@*<button class="btn btn-default">Clear Codes / Tokens</button>*@
-		@*<button id="clear-cookies" class="btn btn-danger">Clear Cookies</button>*@
-		@Html.ActionLink("Clear Cookies", "ClearCookies", "Home", null, new { @class = "btn btn-danger" })
+		@Html.ActionLink("Clear Codes / Tokens", "Index", "Home", new { clear = "true" }, new { @class = "btn btn-default" })
+		@Html.ActionLink("Clear Cookies", "Index", "Home", new { reset = "true" }, new { @class = "btn btn-danger" })
 	</div>
 </div>
 <hr />
@@ -22,7 +21,7 @@
 			<a data-toggle="collapse" href="#authorization-code" aria-expanded="true">Authorization Code</a>
 		</h4>
 	</div>
-	<div id="authorization-code" class="panel-collapse collapse @(@Model.Focus == "auth-code" ? "in" : "")">
+	<div id="authorization-code" class="panel-collapse collapse @(@Model.Focus == "auth-code" || Model.Focus == null ? "in" : "")">
 		<div class="panel-body">
 			<form asp-controller="Home" asp-action="GetAuthorizationCode">
 				<fieldset>
@@ -72,7 +71,7 @@
 	<div id="trade-access-token" class="panel-collapse collapse @(@Model.Focus == "user-tokens" ? "in" : "")">
 		<div class="panel-body">
 
-			<form asp-controller="Home" asp-action="GetTokens" method="POST">
+			<form asp-controller="Home" asp-action="GetTokens">
 				<fieldset>
 					<div class="form-group">
 						@Html.Label("Token Endpoint")
@@ -97,8 +96,22 @@
 					<input type="submit" class="btn btn-primary" value="Trade In Authorization Code" />
 				</fieldset>
 			</form>
-			<div id="tokens-loading" style="display:none;">Loading...</div>
-			<div id="get-tokens-response"></div>
+
+			<div id="get-tokens-response">
+				<br />
+				<div>
+					<strong>Access Token</strong>
+					<pre id="accessToken">@Model.AccessToken</pre>
+				</div>
+				<div>
+					<strong>Refresh Token</strong>
+					<pre id="refreshToken">@Model.RefreshToken</pre>
+				</div>
+				<div>
+					<strong>Raw Response</strong>
+					<pre id="tokenResponse">@Model.RawResponse</pre>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -112,14 +125,7 @@
 	<div id="trade-refresh-token" class="panel-collapse collapse @(@Model.Focus == "refresh-token" ? "in" : "")">
 		<div class="panel-body">
 
-			<form asp-controller="Home" asp-action="RefreshTokens" method="POST"
-				  data-ajax="true"
-				  data-ajax-method="POST"
-				  data-ajax-mode="replace"
-				  data-ajax-update="#refresh-tokens-response"
-				  data-ajax-loading="#refresh-tokens-loading"
-				  data-ajax-success="Success"
-				  data-ajax-failure="Failure">
+			<form asp-controller="Home" asp-action="RefreshTokens">
 				<fieldset>
 					<div class="form-group">
 						@Html.Label("Refresh Token Endpoint")
@@ -144,64 +150,28 @@
 					<input type="submit" class="btn btn-primary" value="Trade in Refresh Token" />
 				</fieldset>
 			</form>
-			<div id="refresh-tokens-loading" style="display:none;">Loading...</div>
-			<div id="refresh-tokens-response"></div>
+			<div id="refresh-tokens-response">
+				<br />
+				<div>
+					<strong>Access Token</strong>
+					<pre id="accessToken">@Model.AccessToken</pre>
+				</div>
+				<div>
+					<strong>Refresh Token</strong>
+					<pre id="refreshToken">@Model.RefreshToken</pre>
+				</div>
+				<div>
+					<strong>Raw Response</strong>
+					<pre id="tokenResponse">@Model.RawResponse</pre>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
 
-@*<div class="panel panel-primary">
-	<div class="panel-heading">
-		<h4 class="panel-title">
-			<a data-toggle="collapse" href="#call-sample-endpoint" aria-expanded="true">Call the <strong>Sample</strong> API Endpoint</a>
-		</h4>
-	</div>
-	<div id="call-sample-endpoint" class="panel-collapse collapse">
-		<div class="panel-body">
-			<button class="btn btn-lg btn-primary">Send GET Request</button>
-		</div>
-	</div>
-</div>*@
-
-@section Scripts {
-	<script>
-		$(document).ready(function () {
-
-			$('#getTokenButton').click(function () {
-				var url = '@Url.Action("GetTokens", "Home")';
-				//var keyWord = $('#Keyword').val();
-				//$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
-
-				$.getJSON('@Url.Action("GetTokens", "Home")' + '?code=' + '@ViewData["code"]', function (tokenResponse) {
-					$('#accessToken').text(tokenResponse.access_token);
-					$('#refreshToken').text(tokenResponse.refresh_token);
-					$('#tokenResponse').text(JSON.stringify(tokenResponse));
-				});
-			});
-
-			$('#tradeRefreshTokenButton').click(function () {
-				$('#tokenResponse').load(url + '?code=' + '@ViewData["code"]');
-			});
-		});
-
-		$('#clear-cookies').click(function () { 
-			$.get(@Url.Action("ClearCookies", "Home"));
-		});
-
-		function Success(data) {
-			//$('#Name').val("");
-			//$('#Age').val("")
-
-		}
-		function Failure() {
-
-			//alert("Form Failed");
-		}
-	</script>
-}
-
 <style>
 	pre {
+		/* Prevent horizontal scrolling since access tokens can be very lengthy and contain no line breaks. */
 		white-space: normal;
 	}
 </style>

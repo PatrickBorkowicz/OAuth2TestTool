@@ -14,47 +14,60 @@ namespace OAuth2TestTool.MVC.Controllers
 {
 	public class HomeController : Controller
 	{
+		#region Actions
+
 		/// <summary>
-		/// 
+		/// Loads the inital view and is also the callback when performing the authentication request.
 		/// </summary>
 		/// <param name="code">Authorization code will be provided by the IDP when redirecting back to this page following the authorization request.</param>
+		/// <param name="state">Returned state string from the IDP for verification.</param>
+		/// <param name="reset">Boolean to determine whether to clear cookies.</param>
+		/// <param name="clear">Boolean to determine whether to clear token values from cookies.</param>
 		/// <returns></returns>
-		public IActionResult Index(string code, string state)
+		public IActionResult Index(string code, string state, bool reset, bool clear)
 		{
-			// Prepopulate form data from cookie. Cookies have NOTHING to do with the authentication process, they are just used here to maintain the state
-			// of the form when bouncing back and forth from the auth provider.
-			var model = new AuthorizationViewModel
+			// Clear cookies.
+			if (reset)
 			{
-				AuthorizationEndpoint = Request.Cookies["AuthorizationEndpoint"],
-				RefreshTokenEndpoint = Request.Cookies["RefreshTokenEndpoint"],
-				AuthorizationCode = Request.Cookies["AuthorizationCode"] ?? code,
-				TokenEndpoint = Request.Cookies["TokenEndpoint"],
-				RedirectURI = "https://" + Request.Host.Value + "/",
-				ClientId = Request.Cookies["ClientId"],
-				ClientSecret = Request.Cookies["ClientSecret"],
-				Scope = Request.Cookies["Scope"],
-				State = Request.Cookies["State"] ?? Guid.NewGuid().ToString("N")
-			};
+				foreach (var cookie in Request.Cookies.Keys)
+					Response.Cookies.Delete(cookie);
 
-			// State, generate a random state variable. The idea is that you pass the state along with the request, then the auth server returns
-			// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it. 
-			//string state = Guid.NewGuid().ToString("N");
+				return View(GetViewModel(true));
+			}
 
-			// If this request is coming back from the auth provder on the authorization request (i.e. due to the redirect_uri being THIS page, 
-			// the auth code will be a query parameter in the request url. Let's send it to the view.
-			if (code != null)
+			var model = GetViewModel();
+
+			// Clear codes / tokens.
+			if (clear)
 			{
-				ViewData["code"] = code;
+				model.AuthorizationCode = null;
+				model.AccessToken = null;
+				model.RefreshToken = null;
+				model.Focus = null;
+				model.RawResponse = null;
 
-				// Request came from OAuth provider.
-				if (state == null || state != Request.Cookies["State"])
+				SetViewModel(model);
+
+				return View(model);
+			}
+
+			// Authorization response.
+			// If this request is coming back from the auth provider on the authorization request (i.e. due to the redirect_uri being THIS page, 
+			// the auth code will be a query parameter in the request url.
+			if (!String.IsNullOrWhiteSpace(code))
+			{
+				// Check state.
+				// State is a randomly generated string (whatever you like).The idea is that you pass the state along with the request, then the auth server returns
+				// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it.
+				if (state == null || state.Trim() != Request.Cookies["State"])
 				{
 					throw new Exception("State sent to OAuth provider did not match response state.");
 				}
 
-				Response.Cookies.Append("Focus", "user-tokens");
+				model.AuthorizationCode = code;
 				model.Focus = "user-tokens";
 
+				SetViewModel(model);
 			}
 
 			return View(model);
@@ -65,21 +78,23 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// </summary>
 		/// <returns></returns>
 		[HttpPost]
-		public IActionResult GetAuthorizationCode(AuthorizationViewModel model)
+		public IActionResult GetAuthorizationCode(AuthorizationViewModel viewModel)
 		{
-			// Dump view model to cookie.
-			Response.Cookies.Append("AuthorizationEndpoint", model.AuthorizationEndpoint);
-			Response.Cookies.Append("RedirectURI", model.RedirectURI);
-			Response.Cookies.Append("ClientId", model.ClientId);
-			Response.Cookies.Append("Scope", model.Scope);
-			Response.Cookies.Append("State", model.State);
-			Response.Cookies.Append("Focus", "auth-code");
-			Response.Cookies.Delete("AuthorizationCode");
+			var model = GetViewModel();
 
-			// RELEVANT CODE
+			model.AuthorizationEndpoint = viewModel.AuthorizationEndpoint.Trim();
+			model.ClientId = viewModel.ClientId.Trim();
+			model.Scope = viewModel.Scope.Trim();
+			model.State = viewModel.State.Trim();
 
-			// First redirect to the authorization endpoint. A user must be logged into Brightspace for this to work, or will be redirected to
-			// Brightspace login for one time sign in. This should be done by a service level Brightspace account.
+			model.RawResponse = null;
+			model.AuthorizationCode = null;
+			model.Focus = "auth-code";
+
+			SetViewModel(model);
+
+			// Redirect to the authorization endpoint. A user must be logged into the IDP for this to work or they will be redirected to
+			// to the IDP login page for one time sign in. For headless applications, it makes sense for this to be a service account.
 
 			// Build authorization code request.
 			string authCodeRequestUri = model.AuthorizationEndpoint
@@ -98,25 +113,23 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// <param name="code"></param>
 		/// <returns></returns>
 		[HttpPost]
-		public IActionResult GetTokens(AuthorizationViewModel model)
+		public IActionResult GetTokens(AuthorizationViewModel viewModel)
 		{
-			// Dump view model to cookie.
-			Response.Cookies.Append("TokenEndpoint", model.TokenEndpoint);
-			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
-			Response.Cookies.Append("ClientId", model.ClientId);
-			Response.Cookies.Append("ClientSecret", model.ClientSecret);
-			Response.Cookies.Append("Focus", "user-tokens");
-			Response.Cookies.Delete("AccessToken");
-			Response.Cookies.Delete("RefreshToken");
+			var model = GetViewModel();
+
+			model.TokenEndpoint = viewModel.TokenEndpoint.Trim();
+			model.AuthorizationCode = viewModel.AuthorizationCode.Trim();
+			model.ClientId = viewModel.ClientId.Trim();
+			model.ClientSecret = viewModel.ClientSecret.Trim();
 
 			model.Focus = "user-tokens";
+			model.AccessToken = null;
+			model.RefreshToken = null;
 
-			// RELEVANT CODE
-
-			var client = new RestClient(model.TokenEndpoint.Trim());
+			var client = new RestClient(model.TokenEndpoint);
 
 			// Prepare POST request to the token endpoint.
-			var tokenRequest = new RestRequest(model.TokenEndpoint.Trim(), Method.POST);
+			var tokenRequest = new RestRequest(model.TokenEndpoint, Method.POST);
 
 			// Send as form.
 			tokenRequest.AddHeader("content-type", "application/x-www-form-urlencoded");
@@ -134,53 +147,48 @@ namespace OAuth2TestTool.MVC.Controllers
 			// Since this is a POST request, RestSharp will add these to the payload (request body).	
 			tokenRequest.AddParameter("grant_type", "authorization_code");
 			tokenRequest.AddParameter("redirect_uri", model.RedirectURI);
-			tokenRequest.AddParameter("code", model.AuthorizationCode.Trim());
+			tokenRequest.AddParameter("code", model.AuthorizationCode);
 
 			IRestResponse response = client.Execute(tokenRequest);
 
+			model.RawResponse = response.Content;
 
 			if (response.IsSuccessful)
 			{
 				// Deserialize JSON response.
 				var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
-
-				model.AuthorizationCode = "(Used) " + model.AuthorizationCode; // Auth code is now invalid.
-				model.RawResponse = response.Content;
+				model.AuthorizationCode = "(Used) " + model.AuthorizationCode; // Auth code is now invalid.		
 				model.AccessToken = tokenResponse.AccessToken;
 				model.RefreshToken = tokenResponse.RefreshToken;
 				model.Focus = "refresh-token";
-
-				Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
-				Response.Cookies.Append("AccessToken", model.AccessToken);
-				Response.Cookies.Append("RefreshToken", model.RefreshToken);
-				Response.Cookies.Append("Focus", model.Focus);
-
-				return RedirectToAction("Index");
 			}
 			else
 			{
-				return RedirectToAction("Index");
+				// TODO: Error message
 			}
-			
-			//return PartialView("_Tokens", model);
+
+			SetViewModel(model);
+			return RedirectToAction("Index");
 		}
 
 		[HttpPost]
-		public IActionResult RefreshTokens(AuthorizationViewModel model)
+		public IActionResult RefreshTokens(AuthorizationViewModel viewModel)
 		{
-			// Dump view model to cookie.
-			Response.Cookies.Append("RefreshTokenEndpoint", model.RefreshTokenEndpoint);
-			Response.Cookies.Append("ClientId", model.ClientId);
-			Response.Cookies.Append("ClientSecret", model.ClientSecret);
-			Response.Cookies.Append("Scope", model.Scope);
+			var model = GetViewModel();
 
-			// RELEVANT CODE
+			model.RefreshTokenEndpoint = viewModel.RefreshTokenEndpoint.Trim();
+			model.RefreshToken = viewModel.RefreshToken.Trim();
+			model.ClientId = viewModel.ClientId.Trim();
+			model.ClientSecret = viewModel.ClientSecret.Trim();
+			model.Scope = viewModel.Scope.Trim();
 
-			var client = new RestClient(model.RefreshTokenEndpoint.Trim());
+			model.AccessToken = null;
+
+			var client = new RestClient(model.RefreshTokenEndpoint);
 
 			// Prepare POST request to the token endpoint.
-			var tokenRequest = new RestRequest(model.RefreshTokenEndpoint.Trim(), Method.POST);
+			var tokenRequest = new RestRequest(model.RefreshTokenEndpoint, Method.POST);
 
 			// Send as form.
 			tokenRequest.AddHeader("content-type", "application/x-www-form-urlencoded");
@@ -188,33 +196,94 @@ namespace OAuth2TestTool.MVC.Controllers
 
 			// Since this is a POST request, RestSharp will add these to the payload (request body).	
 			tokenRequest.AddParameter("grant_type", "refresh_token"); // grant type is now refresh token!
-			tokenRequest.AddParameter("refresh_token", model.RefreshToken.Trim());
+			tokenRequest.AddParameter("refresh_token", model.RefreshToken);
 
 			IRestResponse response = client.Execute(tokenRequest);
 
-			// Deserialize JSON response.
-			var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
-
 			model.RawResponse = response.Content;
-			model.AccessToken = tokenResponse.AccessToken;
-			model.RefreshToken = tokenResponse.RefreshToken;
 
-			return PartialView("_Tokens", model);
 
-			//return Json(new { });
-		}
 
-		public IActionResult ClearCookies()
-		{
-			foreach (var cookie in Request.Cookies.Keys)
-				Response.Cookies.Delete(cookie);
+			if (response.IsSuccessful)
+			{
+				// Deserialize JSON response.
+				var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
-			return View("Index");
+				model.AccessToken = tokenResponse.AccessToken;
+				model.RefreshToken = tokenResponse.RefreshToken;
+				model.Focus = "refresh-token";
+			}
+			else
+			{
+				// TODO: Error message.
+			}
+
+			SetViewModel(model);
+			return RedirectToAction("Index");
 		}
 
 		public IActionResult Error()
 		{
 			return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 		}
+		#endregion
+
+		#region Helpers
+		/// <summary>
+		/// Create the view model from cookie data. Note that cookies have NOTHING to do with the authentication process, they are just used here to maintain form state.
+		/// </summary>
+		/// <returns></returns>
+		private AuthorizationViewModel GetViewModel(bool clean = false)
+		{
+			if (clean)
+			{
+				return new AuthorizationViewModel
+				{
+					RedirectURI = "https://" + Request.Host.Value + "/",
+					State = Guid.NewGuid().ToString("N")
+				};
+			}
+			else
+			{
+				return new AuthorizationViewModel
+				{
+					AccessToken = Request.Cookies["AccessToken"],
+					AuthorizationCode = Request.Cookies["AuthorizationCode"],
+					AuthorizationEndpoint = Request.Cookies["AuthorizationEndpoint"],
+					ClientId = Request.Cookies["ClientId"],
+					ClientSecret = Request.Cookies["ClientSecret"],
+					Focus = Request.Cookies["Focus"],
+					RawResponse = Request.Cookies["RawResponse"],
+					RedirectURI = "https://" + Request.Host.Value + "/",
+					RefreshToken = Request.Cookies["RefreshToken"],
+					RefreshTokenEndpoint = Request.Cookies["RefreshTokenEndpoint"],
+					Scope = Request.Cookies["Scope"],
+					State = Request.Cookies["State"] ?? Guid.NewGuid().ToString("N"),
+					TokenEndpoint = Request.Cookies["TokenEndpoint"]
+				};
+			}
+		}
+
+		/// <summary>
+		/// Create a view model object from cookie data.
+		/// </summary>
+		/// <param name="model"></param>
+		private void SetViewModel(AuthorizationViewModel model)
+		{
+			Response.Cookies.Append("AccessToken", model.AccessToken ?? "");
+			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode ?? "");
+			Response.Cookies.Append("AuthorizationEndpoint", model.AuthorizationEndpoint ?? "");
+			Response.Cookies.Append("ClientId", model.ClientId ?? "");
+			Response.Cookies.Append("ClientSecret", model.ClientSecret ?? "");
+			Response.Cookies.Append("Focus", model.Focus ?? "");
+			Response.Cookies.Append("RawResponse", model.RawResponse ?? "");
+			Response.Cookies.Append("RedirectURI", "https://" + Request.Host.Value + "/");
+			Response.Cookies.Append("RefreshToken", model.RefreshToken ?? "");
+			Response.Cookies.Append("RefreshTokenEndpoint", model.RefreshTokenEndpoint ?? "");
+			Response.Cookies.Append("Scope", model.Scope ?? "");
+			Response.Cookies.Append("State", model.State ?? "");
+			Response.Cookies.Append("TokenEndpoint", model.TokenEndpoint ?? "");
+		}
+		#endregion
 	}
 }
