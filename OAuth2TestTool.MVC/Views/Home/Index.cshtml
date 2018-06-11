@@ -72,14 +72,7 @@
 	<div id="trade-access-token" class="panel-collapse collapse @(@Model.Focus == "user-tokens" ? "in" : "")">
 		<div class="panel-body">
 
-			<form asp-controller="Home" asp-action="GetTokens" method="POST"
-				  data-ajax="true"
-				  data-ajax-method="POST"
-				  data-ajax-mode="replace"
-				  data-ajax-update="#get-tokens-response"
-				  data-ajax-loading="#tokens-loading"
-				  data-ajax-success="Success"
-				  data-ajax-failure="Failure">
+			<form asp-controller="Home" asp-action="GetTokens" method="POST">
 				<fieldset>
 					<div class="form-group">
 						@Html.Label("Token Endpoint")

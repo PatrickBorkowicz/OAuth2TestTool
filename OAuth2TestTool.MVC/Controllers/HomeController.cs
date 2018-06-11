@@ -102,11 +102,14 @@ namespace OAuth2TestTool.MVC.Controllers
 		{
 			// Dump view model to cookie.
 			Response.Cookies.Append("TokenEndpoint", model.TokenEndpoint);
-			Response.Cookies.Append("RedirectURI", model.RedirectURI);
 			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
 			Response.Cookies.Append("ClientId", model.ClientId);
 			Response.Cookies.Append("ClientSecret", model.ClientSecret);
 			Response.Cookies.Append("Focus", "user-tokens");
+			Response.Cookies.Delete("AccessToken");
+			Response.Cookies.Delete("RefreshToken");
+
+			model.Focus = "user-tokens";
 
 			// RELEVANT CODE
 
@@ -135,16 +138,32 @@ namespace OAuth2TestTool.MVC.Controllers
 
 			IRestResponse response = client.Execute(tokenRequest);
 
-			// Deserialize JSON response.
-			var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
-			model.RawResponse = response.Content;
-			model.AccessToken = tokenResponse.AccessToken;
-			model.RefreshToken = tokenResponse.RefreshToken;
-			model.AuthorizationCode = "(used) " + model.AuthorizationCode;  // Auth code is now invalid.
-			model.Focus = "user-tokens";
+			if (response.IsSuccessful)
+			{
+				// Deserialize JSON response.
+				var tokenResponse = JsonConvert.DeserializeObject<TokenResponseModel>(response.Content);
 
-			return PartialView("_Tokens", model);
+
+				model.AuthorizationCode = "(Used) " + model.AuthorizationCode; // Auth code is now invalid.
+				model.RawResponse = response.Content;
+				model.AccessToken = tokenResponse.AccessToken;
+				model.RefreshToken = tokenResponse.RefreshToken;
+				model.Focus = "refresh-token";
+
+				Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
+				Response.Cookies.Append("AccessToken", model.AccessToken);
+				Response.Cookies.Append("RefreshToken", model.RefreshToken);
+				Response.Cookies.Append("Focus", model.Focus);
+
+				return RedirectToAction("Index");
+			}
+			else
+			{
+				return RedirectToAction("Index");
+			}
+			
+			//return PartialView("_Tokens", model);
 		}
 
 		[HttpPost]
