@@ -5,7 +5,8 @@
 @model OAuth2TestTool.MVC.Models.AuthorizationViewModel
 
 <h1>OAuth2 Authentication Testing Tool</h1>
-<p></p>
+<p>Get the <code>authorization_code</code>, <code>access_token</code> and <code>refresh_token</code> for any registered OAuth2 client!</p>
+<p>This site uses cookies. No values are persisted on the server (except potentially in web logs).</p>
 <div class="row">
 	<div class="col-md-12">
 		@*<button class="btn btn-default">Clear Codes / Tokens</button>*@
@@ -21,9 +22,8 @@
 			<a data-toggle="collapse" href="#authorization-code" aria-expanded="true">Authorization Code</a>
 		</h4>
 	</div>
-	<div id="authorization-code" class="panel-collapse collapse">
+	<div id="authorization-code" class="panel-collapse collapse @(@Model.Focus == "auth-code" ? "in" : "")">
 		<div class="panel-body">
-
 			<form asp-controller="Home" asp-action="GetAuthorizationCode">
 				<fieldset>
 					<div class="form-group">
@@ -46,7 +46,7 @@
 						@Html.Label("State")
 						@Html.TextBoxFor(m => m.State, "", htmlAttributes: new { @class = "form-control", id = "State" })
 					</div>
-					<input type="submit" class="btn btn-lg btn-primary" value="Get Authorization Code" />
+					<input type="submit" class="btn btn-primary" value="Get Authorization Code" />
 				</fieldset>
 			</form>
 			<br />
@@ -69,7 +69,7 @@
 			<a data-toggle="collapse" href="#trade-access-token" aria-expanded="true">Access (and Refresh) Token via Authorization Code</a>
 		</h4>
 	</div>
-	<div id="trade-access-token" class="panel-collapse collapse">
+	<div id="trade-access-token" class="panel-collapse collapse @(@Model.Focus == "user-tokens" ? "in" : "")">
 		<div class="panel-body">
 
 			<form asp-controller="Home" asp-action="GetTokens" method="POST"
@@ -101,7 +101,7 @@
 						@Html.Label("Authorization Code")
 						@Html.TextBoxFor(m => m.AuthorizationCode, "", htmlAttributes: new { @class = "form-control", id = "State" })
 					</div>
-					<input type="submit" class="btn btn-lg btn-primary" value="Trade In Authorization Code" />
+					<input type="submit" class="btn btn-primary" value="Trade In Authorization Code" />
 				</fieldset>
 			</form>
 			<div id="tokens-loading" style="display:none;">Loading...</div>
@@ -116,7 +116,7 @@
 			<a data-toggle="collapse" href="#trade-refresh-token" aria-expanded="true">Access (and Refresh) Token via Refresh Token</a>
 		</h4>
 	</div>
-	<div id="trade-refresh-token" class="panel-collapse collapse">
+	<div id="trade-refresh-token" class="panel-collapse collapse @(@Model.Focus == "refresh-token" ? "in" : "")">
 		<div class="panel-body">
 
 			<form asp-controller="Home" asp-action="RefreshTokens" method="POST"
@@ -148,7 +148,7 @@
 						@Html.Label("Scope")
 						@Html.TextBoxFor(m => m.Scope, "", htmlAttributes: new { @class = "form-control", id = "Scope" })
 					</div>
-					<input type="submit" class="btn btn-lg btn-primary" value="Trade in Refresh Token" />
+					<input type="submit" class="btn btn-primary" value="Trade in Refresh Token" />
 				</fieldset>
 			</form>
 			<div id="refresh-tokens-loading" style="display:none;">Loading...</div>

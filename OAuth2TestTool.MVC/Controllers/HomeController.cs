@@ -21,19 +21,6 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// <returns></returns>
 		public IActionResult Index(string code, string state)
 		{
-			// If this request is coming back from the auth provder on the authorization request (i.e. due to the redirect_uri being THIS page, 
-			// the auth code will be a query parameter in the request url. Let's send it to the view.
-			ViewData["code"] = code;
-
-			if (state != null)
-			{
-				// Request came from OAuth provider.
-				if (state != Request.Cookies["State"])
-				{
-					throw new Exception("State sent to OAuth provider did not match response state.");
-				}
-			}
-			
 			// Prepopulate form data from cookie. Cookies have NOTHING to do with the authentication process, they are just used here to maintain the state
 			// of the form when bouncing back and forth from the auth provider.
 			var model = new AuthorizationViewModel
@@ -53,6 +40,23 @@ namespace OAuth2TestTool.MVC.Controllers
 			// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it. 
 			//string state = Guid.NewGuid().ToString("N");
 
+			// If this request is coming back from the auth provder on the authorization request (i.e. due to the redirect_uri being THIS page, 
+			// the auth code will be a query parameter in the request url. Let's send it to the view.
+			if (code != null)
+			{
+				ViewData["code"] = code;
+
+				// Request came from OAuth provider.
+				if (state == null || state != Request.Cookies["State"])
+				{
+					throw new Exception("State sent to OAuth provider did not match response state.");
+				}
+
+				Response.Cookies.Append("Focus", "user-tokens");
+				model.Focus = "user-tokens";
+
+			}
+
 			return View(model);
 		}
 
@@ -69,6 +73,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			Response.Cookies.Append("ClientId", model.ClientId);
 			Response.Cookies.Append("Scope", model.Scope);
 			Response.Cookies.Append("State", model.State);
+			Response.Cookies.Append("Focus", "auth-code");
 			Response.Cookies.Delete("AuthorizationCode");
 
 			// RELEVANT CODE
@@ -101,6 +106,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode);
 			Response.Cookies.Append("ClientId", model.ClientId);
 			Response.Cookies.Append("ClientSecret", model.ClientSecret);
+			Response.Cookies.Append("Focus", "user-tokens");
 
 			// RELEVANT CODE
 
@@ -136,6 +142,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			model.AccessToken = tokenResponse.AccessToken;
 			model.RefreshToken = tokenResponse.RefreshToken;
 			model.AuthorizationCode = "(used) " + model.AuthorizationCode;  // Auth code is now invalid.
+			model.Focus = "user-tokens";
 
 			return PartialView("_Tokens", model);
 		}

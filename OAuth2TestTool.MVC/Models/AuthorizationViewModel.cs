@@ -13,6 +13,7 @@ namespace OAuth2TestTool.MVC.Models
 		public string RedirectURI { get; set; }
 		public string ClientId { get; set; }
 		public string ClientSecret { get; set; }
+		public string Focus { get; set; }
 		public string Scope { get; set; }
 		public string State { get; set; }
 		public string AuthorizationCode { get; set; }
