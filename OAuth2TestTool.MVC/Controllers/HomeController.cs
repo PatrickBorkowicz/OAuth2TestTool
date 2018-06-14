@@ -45,6 +45,7 @@ namespace OAuth2TestTool.MVC.Controllers
 				model.RefreshToken = null;
 				model.Focus = null;
 				model.RawResponse = null;
+				model.State = Guid.NewGuid().ToString("N");
 
 				SetViewModel(model);
 
