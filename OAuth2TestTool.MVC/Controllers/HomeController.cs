@@ -61,11 +61,13 @@ namespace OAuth2TestTool.MVC.Controllers
 				// it in the response, you must verify that it has not changed, i.e. no-one has intercepted the request and transformed it.
 				if (state == null || state.Trim() != Request.Cookies["State"])
 				{
-					throw new Exception("State sent to OAuth provider did not match response state.");
+					model.ErrorMessage = "State sent to OAuth provider did not match response state.";
 				}
-
-				model.AuthorizationCode = code;
-				model.Focus = "user-tokens";
+				else
+				{
+					model.AuthorizationCode = code;
+					model.Focus = "user-tokens";
+				}
 
 				SetViewModel(model);
 			}
@@ -82,10 +84,13 @@ namespace OAuth2TestTool.MVC.Controllers
 		{
 			var model = GetViewModel();
 
-			model.AuthorizationEndpoint = viewModel.AuthorizationEndpoint.Trim();
-			model.ClientId = viewModel.ClientId.Trim();
-			model.Scope = viewModel.Scope.Trim();
-			model.State = viewModel.State.Trim();
+			model.AuthorizationEndpoint = viewModel.AuthorizationEndpoint?.Trim();
+			model.ClientId = viewModel.ClientId?.Trim();
+			model.Scope = viewModel.Scope?.Trim();
+			model.State = viewModel.State?.Trim();
+
+			if (!ModelState.IsValid)
+				return View("Index", model);
 
 			model.RawResponse = null;
 			model.AuthorizationCode = null;
@@ -113,14 +118,17 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// <param name="code"></param>
 		/// <returns></returns>
 		[HttpPost]
-		public IActionResult GetTokens(AuthorizationViewModel viewModel)
+		public IActionResult GetTokens(TokenViewModel viewModel)
 		{
-			var model = GetViewModel();
+			var model = GetViewModel();		
 
-			model.TokenEndpoint = viewModel.TokenEndpoint.Trim();
-			model.AuthorizationCode = viewModel.AuthorizationCode.Trim();
-			model.ClientId = viewModel.ClientId.Trim();
-			model.ClientSecret = viewModel.ClientSecret.Trim();
+			model.TokenEndpoint = viewModel.TokenEndpoint?.Trim();
+			model.AuthorizationCode = viewModel.AuthorizationCode?.Trim();
+			model.ClientId = viewModel.ClientId?.Trim();
+			model.ClientSecret = viewModel.ClientSecret?.Trim();
+
+			if (!ModelState.IsValid)
+				return View("Index", model);
 
 			model.Focus = "user-tokens";
 			model.AccessToken = null;
@@ -162,26 +170,34 @@ namespace OAuth2TestTool.MVC.Controllers
 				model.AccessToken = tokenResponse.AccessToken;
 				model.RefreshToken = tokenResponse.RefreshToken;
 				model.Focus = "refresh-token";
+
+				SetViewModel(model);
+
+				return RedirectToAction("Index");
 			}
 			else
 			{
-				// TODO: Error message
-			}
-
-			SetViewModel(model);
-			return RedirectToAction("Index");
+				// There was an error.
+				SetViewModel(model);
+		
+				model.ErrorMessage = response.Content;
+				return View("Index", model);
+			}	
 		}
 
 		[HttpPost]
-		public IActionResult RefreshTokens(AuthorizationViewModel viewModel)
+		public IActionResult RefreshTokens(RefreshTokenViewModel viewModel)
 		{
 			var model = GetViewModel();
 
-			model.RefreshTokenEndpoint = viewModel.RefreshTokenEndpoint.Trim();
-			model.RefreshToken = viewModel.RefreshToken.Trim();
-			model.ClientId = viewModel.ClientId.Trim();
-			model.ClientSecret = viewModel.ClientSecret.Trim();
-			model.Scope = viewModel.Scope.Trim();
+			model.RefreshTokenEndpoint = viewModel.RefreshTokenEndpoint?.Trim();
+			model.RefreshToken = viewModel.RefreshToken?.Trim();
+			model.ClientId = viewModel.ClientId?.Trim();
+			model.ClientSecret = viewModel.ClientSecret?.Trim();
+			model.Scope = viewModel.Scope?.Trim();
+
+			if (!ModelState.IsValid)
+				return View("Index", model);
 
 			model.AccessToken = null;
 
@@ -197,12 +213,11 @@ namespace OAuth2TestTool.MVC.Controllers
 			// Since this is a POST request, RestSharp will add these to the payload (request body).	
 			tokenRequest.AddParameter("grant_type", "refresh_token"); // grant type is now refresh token!
 			tokenRequest.AddParameter("refresh_token", model.RefreshToken);
+			tokenRequest.AddParameter("scope", model.Scope);
 
 			IRestResponse response = client.Execute(tokenRequest);
 
 			model.RawResponse = response.Content;
-
-
 
 			if (response.IsSuccessful)
 			{
@@ -212,14 +227,20 @@ namespace OAuth2TestTool.MVC.Controllers
 				model.AccessToken = tokenResponse.AccessToken;
 				model.RefreshToken = tokenResponse.RefreshToken;
 				model.Focus = "refresh-token";
+
+				SetViewModel(model);
+
+				return RedirectToAction("Index");
 			}
 			else
 			{
-				// TODO: Error message.
-			}
+				// There was an error.
+				model.RefreshToken = "(Invalid) " + model.RefreshToken;			
+				SetViewModel(model);
 
-			SetViewModel(model);
-			return RedirectToAction("Index");
+				model.ErrorMessage = response.Content;
+				return View("Index", model);
+			}	
 		}
 
 		public IActionResult Error()
@@ -233,11 +254,11 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// Create the view model from cookie data. Note that cookies have NOTHING to do with the authentication process, they are just used here to maintain form state.
 		/// </summary>
 		/// <returns></returns>
-		private AuthorizationViewModel GetViewModel(bool clean = false)
+		private OAuth2ViewModel GetViewModel(bool clean = false)
 		{
 			if (clean)
 			{
-				return new AuthorizationViewModel
+				return new OAuth2ViewModel
 				{
 					RedirectURI = "https://" + Request.Host.Value + "/",
 					State = Guid.NewGuid().ToString("N")
@@ -245,7 +266,7 @@ namespace OAuth2TestTool.MVC.Controllers
 			}
 			else
 			{
-				return new AuthorizationViewModel
+				return new OAuth2ViewModel
 				{
 					AccessToken = Request.Cookies["AccessToken"],
 					AuthorizationCode = Request.Cookies["AuthorizationCode"],
@@ -268,7 +289,7 @@ namespace OAuth2TestTool.MVC.Controllers
 		/// Create a view model object from cookie data.
 		/// </summary>
 		/// <param name="model"></param>
-		private void SetViewModel(AuthorizationViewModel model)
+		private void SetViewModel(OAuth2ViewModel model)
 		{
 			Response.Cookies.Append("AccessToken", model.AccessToken ?? "");
 			Response.Cookies.Append("AuthorizationCode", model.AuthorizationCode ?? "");
