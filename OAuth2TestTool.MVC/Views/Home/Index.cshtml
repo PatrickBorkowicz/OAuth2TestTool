@@ -2,7 +2,7 @@
 	ViewData["Title"] = "OAuth2TestTool";
 }
 
-@model OAuth2TestTool.MVC.Models.AuthorizationViewModel
+@model OAuth2TestTool.MVC.Models.OAuth2ViewModel
 
 <h1>OAuth2 Authentication Testing Tool</h1>
 <p>Get the <code>authorization_code</code>, <code>access_token</code> and <code>refresh_token</code> for any registered OAuth2 client!</p>
@@ -14,6 +14,14 @@
 	</div>
 </div>
 <hr />
+@if (Model.ErrorMessage != null || !ViewData.ModelState.IsValid)
+{
+<div id="error-message" class="alert alert-danger">
+	<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+	@Model.ErrorMessage
+	@Html.ValidationSummary()
+</div>
+}
 <div class="panel panel-primary">
 
 	<div class="panel-heading">
@@ -26,24 +34,28 @@
 			<form asp-controller="Home" asp-action="GetAuthorizationCode">
 				<fieldset>
 					<div class="form-group">
-						@Html.Label("Authorization Endpoint")
-						@Html.TextBoxFor(m => m.AuthorizationEndpoint, "", htmlAttributes: new { @class = "form-control", id = "AuthorizationEndpoint", placeholder = "e.g. https://auth.brightspace.com/oauth2/auth" })
+						<label for="AuthorizationEndpoint">Authorization Endpoint</label>
+						<input value="@Model.AuthorizationEndpoint" class="form-control" type="text" data-val="true" data-val-required="Authorization endpoint is required." name="AuthorizationEndpoint" placeholder="https://auth.example.com/oauth2/auth" />
+						<span class="text-danger field-validation-field" data-valmsg-for="AuthorizationEndpoint" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Redirect URI")
-						@Html.TextBoxFor(m => m.RedirectURI, "", htmlAttributes: new { @class = "form-control", id = "RedirectURI", @readonly = "readonly" })
+						<label for="RedirectURI">Redirect URI</label>
+						<input value="@Model.RedirectURI" type="text" class="form-control" name="RedirectURI" readonly />
 					</div>
 					<div class="form-group">
-						@Html.Label("Client ID")
-						@Html.TextBoxFor(m => m.ClientId, "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+						<label for="ClientId">Client ID</label>
+						<input value="@Model.ClientId" type="text" class="form-control" name="ClientId" data-val="true" data-val-required="Client ID is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="ClientId" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Scope")
-						@Html.TextBoxFor(m => m.Scope, "", htmlAttributes: new { @class = "form-control", id = "Scope" })
+						<label for="Scope">Scope</label>
+						<input value="@Model.Scope" type="text" class="form-control" name="Scope" data-val="true" data-val-required="Scope is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="Scope" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("State")
-						@Html.TextBoxFor(m => m.State, "", htmlAttributes: new { @class = "form-control", id = "State" })
+						<label for="State">State</label>
+						<input value="@Model.State" type="text" name="State" class="form-control" data-val="true" data-val-required="State is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="State" data-valmsg-replace="true"></span>
 					</div>
 					<input type="submit" class="btn btn-primary" value="Get Authorization Code" />
 				</fieldset>
@@ -74,24 +86,29 @@
 			<form asp-controller="Home" asp-action="GetTokens">
 				<fieldset>
 					<div class="form-group">
-						@Html.Label("Token Endpoint")
-						@Html.TextBoxFor(m => m.TokenEndpoint, "", htmlAttributes: new { @class = "form-control", id = "TokenEndpoint", placeholder = "e.g. https://auth.brightspace.com/core/connect/token" })
+						<label for="TokenEndpoint">Token Endpoint</label>
+						<input value="@Model.TokenEndpoint" type="text" class="form-control" name="TokenEndpoint" data-val="true" data-val-required="Token Endpoint is required." placeholder="https://auth.example.com/token" />
+						<span class="text-danger field-validation-field" data-valmsg-for="TokenEndpoint" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Redirect URI")
-						@Html.TextBoxFor(m => m.RedirectURI, "", htmlAttributes: new { @class = "form-control", id = "RedirectURI", @readonly = "readonly" })
+						<label for="RedirectURI">Redirect URI</label>
+						<input value="@Model.RedirectURI" type="text" class="form-control" name="RedirectURI" data-val="true" data-val-required="Redirect URI is required." readonly />
+						<span class="text-danger field-validation-field" data-valmsg-for="RedirectURI" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Client ID")
-						@Html.TextBoxFor(m => m.ClientId, "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+						<label for="ClientId">Client ID</label>
+						<input value="@Model.ClientId" type="text" class="form-control" name="ClientId" data-val="true" data-val-required="Client Id is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="ClientId" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Client Secret")
-						@Html.TextBoxFor(m => m.ClientSecret, "", htmlAttributes: new { @class = "form-control", id = "ClientSecret" })
+						<label for="ClientSecret">Client Secret</label>
+						<input value="@Model.ClientSecret" type="text" class="form-control" name="ClientSecret" data-val="true" data-val-required="Client secret is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="ClientSecret" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Authorization Code")
-						@Html.TextBoxFor(m => m.AuthorizationCode, "", htmlAttributes: new { @class = "form-control", id = "State" })
+						<label for="AuthorizationCode">Authorization Code</label>
+						<input value="@Model.AuthorizationCode" type="text" class="form-control" name="AuthorizationCode" data-val="true" data-val-required="Authorization code is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="AuthorizationCode" data-valmsg-replace="true"></span>
 					</div>
 					<input type="submit" class="btn btn-primary" value="Trade In Authorization Code" />
 				</fieldset>
@@ -128,24 +145,28 @@
 			<form asp-controller="Home" asp-action="RefreshTokens">
 				<fieldset>
 					<div class="form-group">
-						@Html.Label("Refresh Token Endpoint")
-						@Html.TextBoxFor(m => m.RefreshTokenEndpoint, "", htmlAttributes: new { @class = "form-control", id = "RefreshTokenEndpoint", placeholder = "e.g. https://auth.brightspace.com/core/connect/token" })
+						<label for="RefreshTokenEndpoint">Refresh Token Endpoint</label>
+						<input value="@Model.RefreshTokenEndpoint" type="text" class="form-control" name="RefreshTokenEndpoint" data-val="true" data-val-required="Refresh Token is required." placeholder="https://auth.example.com/token" />
+						<span class="text-danger field-validation-field" data-valmsg-for="RefreshTokenEndpoint" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Client ID")
-						@Html.TextBoxFor(m => m.ClientId, "", htmlAttributes: new { @class = "form-control", id = "ClientId" })
+						<label for="ClientId">Client ID</label>
+						<input value="@Model.ClientId" type="text" class="form-control" name="ClientId" data-val="true" data-val-required="Client Id is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="ClientId" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Client Secret")
-						@Html.TextBoxFor(m => m.ClientSecret, "", htmlAttributes: new { @class = "form-control", id = "ClientSecret" })
+						<label for="ClientSecret">Client Secret</label>
+						<input value="@Model.ClientSecret" type="text" class="form-control" name="ClientSecret" data-val="true" data-val-required="Client secret is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="ClientSecret" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Refresh Token")
-						@Html.TextBoxFor(m => m.RefreshToken, "", htmlAttributes: new { @class = "form-control", id = "RefreshToken" })
+						<label for="RefreshToken">Refresh Token</label>
+						<input value="@Model.RefreshToken" type="text" class="form-control" name="RefreshToken" data-val="true" data-val-required="Refresh Token is required." />
+						<span class="text-danger field-validation-field" data-valmsg-for="RefreshToken" data-valmsg-replace="true"></span>
 					</div>
 					<div class="form-group">
-						@Html.Label("Scope")
-						@Html.TextBoxFor(m => m.Scope, "", htmlAttributes: new { @class = "form-control", id = "Scope" })
+						<label for="Scope">Scope</label>
+						<input value="@Model.Scope" type="text" class="form-control" name="Scope" placeholder="Optional" />
 					</div>
 					<input type="submit" class="btn btn-primary" value="Trade in Refresh Token" />
 				</fieldset>
