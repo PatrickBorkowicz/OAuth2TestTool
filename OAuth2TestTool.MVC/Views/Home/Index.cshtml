@@ -4,6 +4,8 @@
 
 @model OAuth2TestTool.MVC.Models.OAuth2ViewModel
 
+
+
 <h1>OAuth2 Authentication Testing Tool</h1>
 <p>Get the <code>authorization_code</code>, <code>access_token</code> and <code>refresh_token</code> for any registered OAuth2 client!</p>
 <p>This site uses cookies. No values are persisted on the server (except potentially in web logs).</p>
@@ -16,11 +18,11 @@
 <hr />
 @if (Model.ErrorMessage != null || !ViewData.ModelState.IsValid)
 {
-<div id="error-message" class="alert alert-danger">
-	<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-	@Model.ErrorMessage
-	@Html.ValidationSummary()
-</div>
+	<div id="error-message" class="alert alert-danger">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		@Model.ErrorMessage
+		@Html.ValidationSummary()
+	</div>
 }
 <div class="panel panel-primary">
 
@@ -196,3 +198,7 @@
 		white-space: normal;
 	}
 </style>
+
+@section Scripts {
+	@{await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
